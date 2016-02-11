@@ -21,7 +21,8 @@ int main()
     ILeafIterator iterator(tree->GetRoot());
     int i = 0;
     do {
-        tree->PrintSuffix(*iterator);
+        std::vector<long> indexes = *iterator;
+        tree->PrintSuffix(indexes);
         i++;
         if (iterator.IsLast()) {
             break;

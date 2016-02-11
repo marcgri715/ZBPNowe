@@ -7,7 +7,7 @@ IChildIterator::IChildIterator(std::shared_ptr<TNode> x, bool includeRoot)
     if (!includeRoot) {
         currentNode = x->children.front();
         last = x->children.back();
-        parentNode = currentNode->parent;
+        parentNode = x;
     } else {
         currentNode = last = x;
         parentNode = nullptr;

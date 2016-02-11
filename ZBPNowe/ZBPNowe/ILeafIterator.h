@@ -6,13 +6,15 @@
 class ILeafIterator : public std::iterator<std::input_iterator_tag, TNode> {
 public:
     ILeafIterator(std::shared_ptr<TNode> x);
-    ILeafIterator(const ILeafIterator& iter) : currentNode(iter.currentNode), last(iter.last) {}
+    ILeafIterator(const ILeafIterator& iter) : currentNode(iter.currentNode), last(iter.last), parentStack(iter.parentStack) {}
     ILeafIterator& operator++();
     ILeafIterator operator++(int);
+    ILeafIterator& operator=(ILeafIterator iter) { currentNode = iter.currentNode; last = iter.last; parentStack = iter.parentStack; return *this; }
     bool IsLast();
-    std::shared_ptr<TNode>& operator*() { return currentNode; }
+    std::vector<long> operator*();
 
 private:
     std::shared_ptr<TNode> currentNode;
     std::shared_ptr<TNode> last;
+    std::vector<std::shared_ptr<TNode>> parentStack;
 };

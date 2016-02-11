@@ -12,7 +12,7 @@ public:
     void LoadString(std::string* newString);
     void CreateTree();
     bool FindPhrase(std::string* toFind);
-    void PrintSuffix(std::shared_ptr<TNode> leaf);
+    void PrintSuffix(std::vector<long> indexes);
     void PrintTree();
     std::shared_ptr<TNode> GetRoot();
 
