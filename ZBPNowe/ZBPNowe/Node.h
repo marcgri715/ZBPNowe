@@ -1,19 +1,22 @@
 #pragma once
 #include <algorithm>
-#include <list>
+#include <vector>
+#include <memory>
+
+#define INF 1<<30
 
 struct TNode : public std::enable_shared_from_this<TNode>{
     long int indexStart;
     long int indexEnd;
-    std::list<std::shared_ptr<TNode>> children;
+    std::vector<std::shared_ptr<TNode>> children;
     std::shared_ptr<TNode> suffixLink;
-    char firstLetter;
-    TNode(long int pIndexStart, char pFirstLetter) {
+    std::shared_ptr<TNode> parent;
+    TNode(long int pIndexStart, std::shared_ptr<TNode> pParent) {
         indexStart = pIndexStart;
-        indexEnd = 1 << 30;
+        indexEnd = INF;
         children.clear();
         suffixLink = nullptr;
-        firstLetter = pFirstLetter;
+        parent = pParent;
     }
     int EdgeLength(long int pos) {
         return std::min(indexEnd, pos+1) - indexStart;
