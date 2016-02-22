@@ -4,12 +4,14 @@
 
 CTree::CTree()
 {
-    std::shared_ptr<TNode> nowy(new TNode(-1));
+    std::shared_ptr<TNode> nowy = std::make_shared<TNode>(-1, -1);
     root = activeNode = nowy;
     activeEdge = activeLength = 0;
     lastAddedNode = nowy;
     position = -1;
     remainder = 0;
+    count = 0;
+    string = nullptr;
 }
 
 
@@ -19,39 +21,34 @@ CTree::~CTree()
         delete string;
     }
     std::vector<IChildIterator> iterstack;
-    std::vector<int> indexstack;
-    iterstack.clear();
+    iterstack.resize(0);
     IChildIterator child(root, true);
-    int index = 0;
     while (true) {
-        if (index == (*child)->children.size()) {
+        if (0 == (*child)->children.size()) {
+            if (iterstack.size() == 0)
+                break;
             child = iterstack.back();
             iterstack.pop_back();
-            index = indexstack.back();
-            indexstack.pop_back();
-            std::shared_ptr<TNode> temp = (*child);
+            (*child)->children.erase((*child)->children.begin());
             child++;
-            index++;
             continue;
         }
-        if ((*child)->children.at(index)->indexEnd != INF) {
+        if ((*child)->children.front()->indexEnd != INF) {
             iterstack.push_back(child);
-            indexstack.push_back(index);
             child = IChildIterator(*child);
-            index = 0;
             continue;
         }
-        std::shared_ptr<TNode> temp = (*child)->children.at(index);
-        //child++;
+        std::shared_ptr<TNode> temp = (*child)->children.front();
         if (temp->suffixLink) temp->suffixLink = nullptr;
-        index++;
+        (*child)->children.erase((*child)->children.begin());
     }
-    iterstack.clear();
-    indexstack.clear();
+    
+    OutputDebugString(L"tree dies\n");
 }
 
 void CTree::LoadString(std::string* newString)
 {
+    if (string) delete string;
     string = new std::string(*newString);
 }
 
@@ -66,7 +63,7 @@ bool CTree::FindPhrase(std::string * toFind)
 {
     int index = 0;
     IChildIterator child(root);
-    do {
+    while (true) {
         if (string->at((*child)->indexStart) == toFind->at(index)) {
             index++;
             if (index == toFind->size() - 1)
@@ -89,8 +86,9 @@ bool CTree::FindPhrase(std::string * toFind)
             child = IChildIterator(*child);
             continue;
         }
+        if (child.IsLast()) break;
         child++;
-    } while (!child.IsLast());
+    }
     return false;
 }
 
@@ -100,12 +98,7 @@ void CTree::PrintSuffix(std::vector<long> indexes)
     for (int i = 0; i < indexes.size(); i += 2) {
         toBePrinted.append(*string, indexes.at(i), indexes.at(i + 1));
     }
-    printf("Suffix: %s", toBePrinted.c_str());
-}
-
-void CTree::PrintTree()
-{
-    PrintTree(root, 0, 0);
+    printf("Suffix: %s\n", toBePrinted.c_str());
 }
 
 std::shared_ptr<TNode> CTree::GetRoot()
@@ -145,7 +138,7 @@ void CTree::ExtendTree()
             }
         }
         if (!selected) {
-            std::shared_ptr<TNode> newLeaf(new TNode(position));
+            std::shared_ptr<TNode> newLeaf = std::make_shared<TNode>(position, count++);
             activeNode->children.push_back(newLeaf);
             AddSuffixLink(activeNode);
         }
@@ -157,18 +150,41 @@ void CTree::ExtendTree()
                 break;
             }
             //split
-            long lastEnd = selected->indexEnd;
-            selected->indexEnd = selected->indexStart + activeLength;
-            std::shared_ptr<TNode> newLeaf(new TNode(selected->indexEnd));
             if (selected->children.size() > 0) {
-                newLeaf->children = selected->children;
-                newLeaf->indexEnd = lastEnd;
-                selected->children.clear();
+                long lastStart = selected->indexStart;
+                selected->indexStart = selected->indexStart + activeLength;
+                std::shared_ptr<TNode> newNode = std::make_shared<TNode>(lastStart, count++);
+                newNode->indexEnd = selected->indexStart;
+                newNode->children.push_back(selected);
+                std::shared_ptr<TNode> yetAnotherNewLeaf = std::make_shared<TNode>(position, count++);
+                newNode->children.push_back(yetAnotherNewLeaf);
+                std::vector<std::shared_ptr<TNode>>::iterator iter;
+                iter = activeNode->children.begin();
+                while (true) {
+                    if (*iter == selected) {
+                        activeNode->children.insert(iter, newNode);
+                        iter = activeNode->children.begin();
+                        while (true) {
+                            if (*iter == selected) {
+                                activeNode->children.erase(iter);
+                                break;
+                            }
+                            iter++;
+                        }
+                        break;
+                    }
+                    iter++;
+                }
+                AddSuffixLink(newNode);
             }
-            selected->children.push_back(newLeaf);
-            std::shared_ptr<TNode> yetAnotherNewLeaf(new TNode(position));
-            selected->children.push_back(yetAnotherNewLeaf);
-            AddSuffixLink(selected);
+            else {
+                selected->indexEnd = selected->indexStart + activeLength;
+                std::shared_ptr<TNode> newLeaf = std::make_shared<TNode>(selected->indexEnd, count++);
+                selected->children.push_back(newLeaf);
+                std::shared_ptr<TNode> yetAnotherNewLeaf = std::make_shared<TNode>(position, count++);
+                selected->children.push_back(yetAnotherNewLeaf);
+                AddSuffixLink(selected);
+            }
         }
         remainder--;
         if (activeNode == root && activeLength > 0) {
@@ -189,42 +205,4 @@ void CTree::ExtendTree()
 char CTree::GetActiveEdge()
 {
     return string->at(activeEdge);
-}
-
-void CTree::PrintTree(std::shared_ptr<TNode> node, int level, int emptySpaces)
-{
-    IChildIterator iterator(node);
-    do {
-        for (int i = 0; i < level; i++) {
-            printf("   ");
-        }
-        for (int i = 0; i < emptySpaces; i++) {
-            printf(" ");
-        }
-        printf(" -");
-        long limit = std::min((*iterator)->indexEnd, (long)string->size());
-        for (int i = (*iterator)->indexStart; i < limit; i++) {
-            printf("%c", string->at(i));
-        }
-        printf("-|\n");
-        for (int i = 0; i < level; i++) {
-            printf("   ");
-        }
-        for (int i = 0; i < emptySpaces; i++) {
-            printf(" ");
-        }
-        int letters = limit - (*iterator)->indexStart;
-        for (int i = 0; i < letters; i++) {
-            printf(" ");
-        }
-        letters = letters;
-        printf("   |\n");
-        if ((*iterator)->children.size() > 0) {
-            PrintTree((*iterator), level+1, emptySpaces + letters);
-        }
-        if (iterator.IsLast()) {
-            break;
-        }
-        iterator++;
-    } while (true);
 }

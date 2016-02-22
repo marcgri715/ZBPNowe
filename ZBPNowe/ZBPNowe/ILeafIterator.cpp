@@ -36,7 +36,7 @@ ILeafIterator& ILeafIterator::operator++()
                     break;
                 index++;
             }
-            if (index >= tempNode->children.size() - 1) {
+            if (index == tempNode->children.size() - 1) {
                 currentNode = tempNode;
                 parentStack.pop_back();
                 continue;
@@ -46,13 +46,14 @@ ILeafIterator& ILeafIterator::operator++()
                 break;
             }
             tempNode = tempNode->children[index];
+            parentStack.push_back(tempNode);
             while (true) {
                 if (tempNode->children.front()->indexEnd == INF) {
                     currentNode = tempNode->children.front();
                     break;
                 }
-                parentStack.push_back(tempNode);
                 tempNode = tempNode->children.front();
+                parentStack.push_back(tempNode);
             }
             break;
         }

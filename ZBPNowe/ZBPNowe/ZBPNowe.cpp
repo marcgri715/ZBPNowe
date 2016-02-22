@@ -5,43 +5,57 @@
 #include "Tree.h"
 #include <string>
 #include "ILeafIterator.h"
+#include "Timer.h"
+#include <fstream>
+#include <sstream>
 
 
 int main()
 {
-    std::string* string = new std::string("abracadabraabracadabraabracadabra");
-    //std::string* string = new std::string("abracadabraabracadabra");
-    //std::string* string = new std::string("abcabxabcd");
+    //std::string* string = new std::string("abracadabra");
     //std::string* string = new std::string("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.");
-    //std::string* string = new std::string("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ");
+    printf("Podaj liczbê znaków do za³adowania (powy¿ej 10000): ");
+    int limit;
+    scanf_s("%d", &limit);
+    std::fstream file;
+    file.open("bigTextFile.txt");
+    std::stringstream strStream;
+    strStream << file.rdbuf();
+    file.close();
+    std::ofstream toWrite;
+    std::stringstream result;
+    std::string* toFind = nullptr;
+    std::stringstream filename;
+    filename << "results" << limit << ".txt";
+    toWrite.open(filename.str(), std::ios::app);
+    srand(time(NULL));
+    std::string* string = new std::string(strStream.str().substr(0, limit - 1));
     string->push_back(0);
+    double durationSummed = 0.0;
     std::shared_ptr<CTree> tree(new CTree());
     tree->LoadString(string);
+    CTimer timer;
+    timer.StartTimer();
     tree->CreateTree();
-    ILeafIterator iterator(tree->GetRoot());
-    int i = 0;
-    do {
-        std::vector<long> indexes = *iterator;
-        tree->PrintSuffix(indexes);
-        i++;
-        if (iterator.IsLast()) {
-            break;
+    durationSummed = timer.CheckTimer();
+    result << durationSummed;
+    durationSummed = 0.0;
+    for (int k = 1; k <= 10; k++) {
+        for (int j = 0; j < 100; j++) {
+            if (toFind) delete toFind;
+            toFind = new std::string(string->substr(rand() % (limit - k * 1000), k * 1000));
+            timer.StartTimer();
+            tree->FindPhrase(toFind);
+            durationSummed += timer.CheckTimer();
         }
-        iterator++;
-    } while (true);
-    std::string* toFind = new std::string("aabrac");
-    printf("%d - %d", string->size(), i);
-    if (tree->FindPhrase(toFind)) {
-        printf("\nznaleziono!");
+        result << '\t' << durationSummed / 100.0;
     }
-    else {
-        printf("\nnie znaleziono!");
-    }
-    //system("CLS");
-    //tree->PrintTree();
-    getchar();
-    if (string) delete string;
+    result << '\n';
+    toWrite.write(result.str().c_str(), result.str().size());
+    toWrite.flush();
+    delete string;
+    toWrite.close();
+    printf("koniec dzialania programu");
     delete toFind;
-    _CrtDumpMemoryLeaks();
 }
 

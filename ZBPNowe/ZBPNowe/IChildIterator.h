@@ -5,8 +5,10 @@
 class IChildIterator
 {
 public:
+    IChildIterator() { currentNode = last = parentNode = nullptr; }
     IChildIterator(std::shared_ptr<TNode> x, bool includeRoot = false);
     IChildIterator(const IChildIterator& iter) : currentNode(iter.currentNode), last(iter.last), parentNode(iter.parentNode) {}
+    ~IChildIterator() { currentNode = nullptr; last = nullptr; parentNode = nullptr; }
     IChildIterator& operator++();
     IChildIterator operator++(int);
     bool IsLast();
